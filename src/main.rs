@@ -1,3 +1,4 @@
+use std::fs;
 use std::io::prelude::Write;
 use std::{fs::OpenOptions, path::Path};
 
@@ -20,13 +21,27 @@ fn cli() -> Command {
 
 fn main() {
     let matches = cli().get_matches();
+    let path = "/Users/faroukhamadi/.todos";
 
     match matches.subcommand() {
         Some(("list", _sub_matches)) => {
-            println!("listing todos");
+            if Path::new(&path).exists() {
+                println!("Todos:");
+
+                let lines: Vec<String> = fs::read_to_string(&path)
+                    .unwrap()
+                    .lines()
+                    .map(String::from)
+                    .collect();
+
+                for line in lines {
+                    println!("{line}");
+                }
+            } else {
+                println!("No todos");
+            }
         }
         Some(("add", sub_matches)) => {
-            let path = "/Users/faroukhamadi/.todos";
             if Path::new(&path).exists() {
                 let mut file = OpenOptions::new()
                     .append(true)
