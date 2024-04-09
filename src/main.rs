@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::prelude::Write;
+use std::io::BufReader;
 use std::{fs::OpenOptions, path::Path};
 
 use clap::{arg, Command};
@@ -14,7 +15,13 @@ fn cli() -> Command {
         .subcommand(
             Command::new("add")
                 .about("adds new todo to todos")
-                .arg(arg!(<TODO> "The todo to add"))
+                .arg(arg!(<TASK> "The todo to add"))
+                .arg_required_else_help(true),
+        )
+        .subcommand(
+            Command::new("do")
+                .about("marks a todo as done")
+                .arg(arg!(<TASK> "The todo to mark as done"))
                 .arg_required_else_help(true),
         )
 }
@@ -48,7 +55,35 @@ fn main() {
                     .open(path)
                     .expect("should be able to open file");
 
-                let todo = sub_matches.get_one::<String>("TODO").expect("required");
+                let todo = sub_matches.get_one::<String>("TASK").expect("required");
+
+                if let Err(e) = writeln!(file, "{}", todo) {
+                    eprintln!("Couldn't write to file: {}", e);
+                }
+            } else {
+                println!("IT JUST DOESNT EXIST");
+            }
+        }
+        Some(("do", sub_matches)) => {
+            if Path::new(&path).exists() {
+                let mut file = OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(path)
+                    .expect("should be able to open file");
+
+                let todo = sub_matches.get_one::<String>("TASK").expect("required");
+
+                let lines: Vec<String> = fs::read_to_string(&path)
+                    .unwrap()
+                    .lines()
+                    .map(String::from)
+                    .filter(|line| !line.contains(todo))
+                    .collect();
+
+                println!("{:?}", lines);
+                fs::write(&path, lines.join("\n")).expect("should be able to write to file");
+
 
                 if let Err(e) = writeln!(file, "{}", todo) {
                     eprintln!("Couldn't write to file: {}", e);
